@@ -1,4 +1,4 @@
-from data_preparation import PrepareData
+from data_preparation import PrepareData, TrainTestSplit
 
 
 def main():
@@ -6,6 +6,7 @@ def main():
     labels_dir = 'data/labels'
     raw_annot = 'data/annotations'
     PrepareData(images_dir, labels_dir, raw_annot)
+    TrainTestSplit().split()
 
 
 if __name__ == '__main__':

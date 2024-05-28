@@ -1,5 +1,7 @@
 import cv2
 import os
+import random
+import shutil
 
 from bs4 import BeautifulSoup
 
@@ -166,5 +168,57 @@ class PrepareData:
 
 
 class TrainTestSplit:
-    def __init__(self) -> None:
-        pass
+    def __init__(self,
+                 image_train_path: str = 'data/images/train',
+                 image_validation_path: str = 'data/images/validation',
+                 image_test_path: str = 'data/images/test',
+                 train: float = .7,
+                 val: float = .2) -> None:
+        self.image_train_path = image_train_path
+        self.image_validation_path = image_validation_path
+        self.image_test_path = image_test_path
+        self.train, self.val = train, val
+
+    def _create_dirs(self) -> None:
+        os.makedirs(self.image_train_path, exist_ok=True)
+        os.makedirs(self.image_validation_path, exist_ok=True)
+        os.makedirs(self.image_test_path, exist_ok=True)
+        os.makedirs(self.image_train_path.replace("images", "labels"),
+                    exist_ok=True)
+        os.makedirs(self.image_validation_path.replace("images", "labels"),
+                    exist_ok=True)
+        os.makedirs(self.image_test_path.replace("images", "labels"),
+                    exist_ok=True)
+    
+    def split(self, src_dir_path: str = 'data/images'):
+        """Separates train/ validation/ test"""
+        random.seed(4)
+        shuffled_files = os.listdir(src_dir_path)
+        random.shuffle(shuffled_files)
+        print(f'Total number of images: {len(shuffled_files)}')
+        self._create_dirs()
+        train_size = self.train * len(shuffled_files)
+        val_size = (self.val+self.train) * len(shuffled_files)
+        for i, filename in enumerate(shuffled_files):
+            image_path = os.path.join(src_dir_path, filename)
+            label_path = os.path.join(src_dir_path.replace('images', 'labels'),
+                                      filename.replace('png', 'txt'))
+            if not os.path.isdir(image_path):
+                if i <= train_size:
+                    dstpath = image_path.replace(src_dir_path,
+                                                 self.image_train_path)
+                elif i > train_size and i <= val_size:
+                    dstpath = image_path.replace(src_dir_path,
+                                                 self.image_validation_path)
+                else:
+                    dstpath = image_path.replace(src_dir_path,
+                                                 self.image_test_path)
+                shutil.move(image_path, dstpath)
+                shutil.move(label_path, dstpath.replace('images', 'labels').replace('png', 'txt'))
+
+        print(f'Number of train images: {len(os.listdir(self.image_train_path))}')
+        print(f'Number of train labels: {len(os.listdir(self.image_train_path.replace("images", "labels")))}')
+        print(f'Number of validation images: {len(os.listdir(self.image_validation_path))}')
+        print(f'Number of validation labels: {len(os.listdir(self.image_validation_path.replace("images", "labels")))}')
+        print(f'Number of test images: {len(os.listdir(self.image_test_path))}')
+        print(f'Number of test labels: {len(os.listdir(self.image_test_path.replace("images", "labels")))}')
