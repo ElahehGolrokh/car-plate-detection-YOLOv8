@@ -52,8 +52,6 @@ class PrepareData:
                     bbxs.append([bbx_x_center, bbx_y_center, bbx_width, bbx_height])
 
                 filepath = os.path.join(self.labels_dir, file)
-                # !touch {filepath}
-                # open(filepath, filepath).close()
                 with open(filepath, 'w') as f:
                     # for label in labels:
                     for bbx in bbxs:
@@ -63,7 +61,7 @@ class PrepareData:
                         f.write('{} '.format(bbx[2]))
                         f.write('{}'.format(bbx[3]))
                         f.write('\n')
-                        f.close()
+                    f.close()
             print('Done!')
         else:
             print('The labels are already in plain texts as .xml files.')

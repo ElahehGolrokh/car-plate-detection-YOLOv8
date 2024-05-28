@@ -1,10 +1,13 @@
+from omegaconf import OmegaConf
+
 from data_preparation import PrepareData, TrainTestSplit
 
 
 def main():
-    images_dir = 'data/images'
-    labels_dir = 'data/labels'
-    raw_annot = 'data/annotations'
+    Config = OmegaConf.load('config.yaml')
+    images_dir = Config.images_dir
+    labels_dir = Config.labels_dir
+    raw_annot = Config.raw_annot
     PrepareData(images_dir, labels_dir, raw_annot)
     TrainTestSplit().split()
 

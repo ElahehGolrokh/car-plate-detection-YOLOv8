@@ -1,0 +1,17 @@
+path: 'data' # dataset root dir
+train: images/train  # train images (relative to 'path')
+val: images/validation  # val images (relative to 'path')
+test: images/test  # test images (relative to 'path')
+
+images_dir: 'data/images'
+labels_dir: 'data/labels'
+raw_annot: 'data/annotations'
+
+# Classes
+names:
+  0: CarPlate
+
+# train_test_split
+train_size: .7
+val_size: .2
+test_size: .1
