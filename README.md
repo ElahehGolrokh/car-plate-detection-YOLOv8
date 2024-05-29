@@ -1,5 +1,5 @@
 # Car Plate Detection using YOLOv8 🚀
-
+![predictions](predictions.jpg)
 Welcome to the car plate detection project using YOLOv8! This repository provides a step-by-step guide to preparing data, training an object detection model with YOLOv8, and running inference with the trained model.
 
 ## Overview
@@ -31,6 +31,7 @@ To use YOLOv8 for your object detection task, structure your data as follows:
 
 The data directory should be structured like this:
 
+```
 data
 ├── images
 │   ├── test
@@ -52,6 +53,7 @@ data
     └── validation
         ├── Cars10.txt
         ├── ...
+```
 
 ## Train YOLOv8 Object Detection Model on a Custom Dataset
 To train your own object detection model, you can run:
