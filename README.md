@@ -1,77 +1,76 @@
-# car-plate-detection-YOLOv8
-Welcome to the car plate detection using YOLOv8 🚀! The basic usage is based on the YOLOv8 tutorial and has been customized for the current dataset to guide you step-by-step in preparing data and training an object detection model using YOLO. <br>
-This tutorial will take you from installation, to  training YOLOv8 object detection model with a custom dataset, then exporting it for inference.
+# Car Plate Detection using YOLOv8 🚀
 
-## Installation 
+Welcome to the car plate detection project using YOLOv8! This repository provides a step-by-step guide to preparing data, training an object detection model with YOLOv8, and running inference with the trained model.
 
-This package is tested in ubuntu 20.04 with python 3.9.12. First of all creat your virtual environment:
+## Overview
+
+The basic usage is based on the YOLOv8 tutorial, customized for the current dataset to guide you through preparing data and training a model. This tutorial will cover everything from installation to training the YOLOv8 object detection model with a custom dataset and then exporting it for inference.
+
+## Installation
+
+This package is tested on Ubuntu 20.04 with Python 3.9.12. First, create your virtual environment:
 
 ```shell
 python -m venv venv
 source venv/bin/activate
 ```
-
-Next for installing all dependencies run this command:
+Next, install all dependencies:
 
 ```shell
 pip install -r requirements.txt
 ```
 
-## Train YOLOv8 object detection model on a custom dataset
+## Data Preparation
+To use YOLOv8 for your object detection task, structure your data as follows:
 
-For training your own object detection model you can run ```shell main.py```. There are some arguments you can customize: <br>
--rpr or --remove_prev_runs: whether you want to remove previous runs <br>
--p or --prepare: whether you want to implement data preparation <br>
--t or --train: whether you want to implement training <br>
--e or --export: whether you want to export a saved model <br>
+1. In the root directory of your dataset, create two folders named images and labels. For this tutorial, we consider data/ in the root of our project as the dataset root.
+2. Images can be in jpg or png formats.
+3. Create a config file in yaml format specifying the paths to the root and images directories.
+4. Separating train, validation, and test partitions is optional. If you do this, create subdirectories within both images and labels folders. Specify these paths in the config file.
+5. Labels must be in txt format. For each bounding box in an image, include a row in the corresponding label file with the following structure (no commas): class_label bbx_x_center bbx_y_center bbx_width bbx_height.
 
-### Data Preparation
+The data directory should be structured like this:
 
-In order to use YOLOv8 for your object detection task, you have to structure your data in a specific way. <br>
+data
+├── images
+│   ├── test
+│   │   ├── Cars27.png
+│   │   ├── ...
+│   ├── train
+│   │   ├── Cars0.png
+│   │   ├── ...
+│   └── validation
+│       ├── Cars10.png
+│       ├── ...
+└── labels
+    ├── test
+    │   ├── Cars27.txt
+    │   ├── ...
+    ├── train
+    │   ├── Cars0.txt
+    │   ├── ...
+    └── validation
+        ├── Cars10.txt
+        ├── ...
 
-1. First of all in the root directory of your dataset, you must have two folders with these specific names: images and labels. In this tutorial we consider data/ in the root of our project as the root of our dataset. 
-2. Images could be in any of jpg or png formats.
-3. There must be a config file in the yaml format in which the paths to the root and images directories are specified
-4. Separating train, validation and test partitions is optional. If you want to do this, you have to consider these subdirectories in both folders, images and labels. If that's the case, all these paths have to be specified in the config file.
-The labels have to be in txt format and for each bounding box in the image, there must be a row in the corresponding label file with the following structure without any commos: class_label, bbx_x_center, bbx_y_center, bbx_width, bbx_height <br>
+## Train YOLOv8 Object Detection Model on a Custom Dataset
+To train your own object detection model, you can run:
 
-The data directory has to contain components like this: <br>
-── data
-│   ├── images
-│   │   ├── test
-│   │   │   ├── Cars27.png
-│   │   │   ├── .
-│   │   │   ├── .
-│   │   ├── train
-│   │   │   ├── Cars0.png
-│   │   │   ├── .
-│   │   │   ├── .
-│   │   └── validation
-│   │       ├── Cars10.png
-│   │       ├── .
-│   │       ├── .
-│   └── labels
-│       ├── test
-│       │   ├── Cars27.txt
-│       │   ├── .
-│       │   ├── .
-│       ├── train
-│       │   ├── Cars0.txt
-│       │   ├── .
-│       │   ├── .
-│       ├── validation
-│       │   ├── Cars10.txt
-│       │   ├── .
-│       │   ├── .
+```shell
+python main.py
+```
 
+You can customize the following arguments:
 
-## Inference with trained models
+* -rpr or --remove_prev_runs: Whether you want to remove previous runs.
+* -p or --prepare: Whether you want to implement data preparation.
+* -t or --train: Whether you want to implement training.
+* -e or --export: Whether you want to export a saved model.
 
-For getting predictions from a YOLO saved model, you can run this command:
+## Inference with Trained Models
+To get predictions from a YOLO saved model, run:
 
 ```shell
 python inference.py --model_path 'path/to/model' --image_path 'path/to/test_image'
 ```
-The default path for saved model could be: runs/detect/train/weights/best.pt <br>
-Besides, the test image could be jpg or png. The result of model predicted bounding boxes will be saved in runs directory as a png file.
-
+The default path for the saved model is `runs/detect/train/weights/best.pt`. The test image can be in `jpg` or `png` format. The result of the model's predicted bounding boxes will be saved in the `runs` directory as a `png` file.
