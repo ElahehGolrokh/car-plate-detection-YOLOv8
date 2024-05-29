@@ -58,13 +58,21 @@ class Pipeline:
         if self.train:
             image_size = Config.image_size
             epochs = Config.epochs
-            bashCommand = f"yolo train model=yolov8n.pt data={self.config_path} epochs={epochs} imgsz={image_size}"
-            process = subprocess.Popen(bashCommand.split(),
-                                       stdout=subprocess.PIPE)
-            output, error = process.communicate()
+            try:
+                bashCommand = f"yolo train model=yolov8n.pt data={self.config_path} epochs={epochs} imgsz={image_size}"
+                process = subprocess.Popen(bashCommand.split(),
+                                           stdout=subprocess.PIPE)
+                # You can also assign the process.communicate() to variables output, error
+                process.communicate()
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
         if self.export:
-            bashCommand = f"yolo export model={self.model_path} format={self.export_format}"
-            process = subprocess.Popen(bashCommand.split(),
-                                       stdout=subprocess.PIPE)
-            output, error = process.communicate()
+            try:
+                bashCommand = f"yolo export model={self.model_path} format={self.export_format}"
+                process = subprocess.Popen(bashCommand.split(),
+                                           stdout=subprocess.PIPE)
+                # You can also assign the process.communicate() to variables output, error
+                process.communicate()
+            except Exception as e:
+                print(f"An error occurred: {e}")
