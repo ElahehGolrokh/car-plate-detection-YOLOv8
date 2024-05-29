@@ -16,5 +16,6 @@ train_size: .7
 val_size: .2
 test_size: .1
 
+# training
 image_size: 384
 epochs: 2

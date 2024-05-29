@@ -1,13 +1,33 @@
-import os
 import shutil
 import subprocess
 
 from omegaconf import OmegaConf
 
-from data_preparation import PrepareData, TrainTestSplit
+from .data_preparation import PrepareData, TrainTestSplit
 
 
 class Pipeline:
+    """
+    The complete pipeline includes data preparation in the format accepted by
+    yolo, training, and exporting the trained model.
+
+    ...
+    Attributes
+    ----------
+        config_path: path to config.yaml file
+        remove_prev_runs: specifies whether you want to remove previous runs
+        prepare: specifies whether you want to implement data preparation
+        train: specifies whether you want to implement training
+        export: specifies whether you want to export a saved model
+        model_path: path to saved model to export default value is
+                    runs/detect/train/weights/best.pt
+        export_format: format for exporting saved model. See YOLO documentation
+                       for more details about the acceptable formats.
+
+
+    Public Methods
+        run()
+    """
     def __init__(self,
                  config_path: str,
                  remove_prev_runs: bool = True,
@@ -25,10 +45,10 @@ class Pipeline:
         self.export_format = export_format
 
     def run(self):
+        """Runs the entire pipeline based on user prefrences"""
         Config = OmegaConf.load(self.config_path)
         if self.remove_prev_runs:
             shutil.rmtree('runs', )
-            # os.removedirs('runs')
         if self.prepare:
             images_dir = Config.images_dir
             labels_dir = Config.labels_dir
@@ -39,10 +59,12 @@ class Pipeline:
             image_size = Config.image_size
             epochs = Config.epochs
             bashCommand = f"yolo train model=yolov8n.pt data={self.config_path} epochs={epochs} imgsz={image_size}"
-            process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+            process = subprocess.Popen(bashCommand.split(),
+                                       stdout=subprocess.PIPE)
             output, error = process.communicate()
-        
+
         if self.export:
             bashCommand = f"yolo export model={self.model_path} format={self.export_format}"
-            process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+            process = subprocess.Popen(bashCommand.split(),
+                                       stdout=subprocess.PIPE)
             output, error = process.communicate()

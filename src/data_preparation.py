@@ -4,30 +4,58 @@ import random
 import shutil
 
 from bs4 import BeautifulSoup
+from typing import List
 
 
 class PrepareData:
+    """
+    Prepares data in the specific format defined by YOLO. The initial dataset
+    must contain images and annotations folders (The names of these folders
+    are defined in the config file). The annotations are first converted to
+    plain text, then are saved in .txt format and finally all coordinates of
+    the bounding boxes are normalized.
+
+    ...
+    Attributes
+    ----------
+        images_dir: path to images dir
+        labels_dir: path to labels dir in which the converted labels are going
+        to be stored
+        raw_annot: path to initial annotations dir
+
+
+    Private Methods
+    ---------------
+        _create_dirs()
+        _modify_xmls()
+        _xml_to_txt()
+        _normalize_coordinates()
+        _normalize_dataset()
+
+    """
     def __init__(self, images_dir: str, labels_dir: str, raw_annot: str) -> None:
         self.images_dir = images_dir
         self.labels_dir = labels_dir
         self.raw_annot = raw_annot
         self._normalize_dataset()
-    
-    def prepare_pipeline(self):
-        pass
-    
+
     def _create_dirs(self) -> None:
+        """
+        Creates images/ labels directories in the data root dir which is
+        specified as 'data' by default in the config file
+        """
         os.makedirs(self.images_dir, exist_ok=True)
         os.makedirs(self.labels_dir, exist_ok=True)
-    
-    def _modify_xmls(self):
+
+    def _modify_xmls(self) -> None:
         """
-        Converts xml contents to a plain text containing only bbx class and locations
+        Converts xml contents to a plain text containing only bbx class and
+        locations
         """
         self._create_dirs()
         if len(os.listdir(self.labels_dir)) == 0:
             print('Convert xml contents to a plain text containing only bbx class and locations. \n',
-                'It may take a while ...')
+                  'It may take a while ...')
             for file in os.listdir(self.raw_annot):
                 filepath = os.path.join(self.raw_annot, file)
                 bbxs = []
@@ -65,12 +93,12 @@ class PrepareData:
             print('Done!')
         else:
             print('The labels are already in plain texts as .xml files.')
-    
+
     def _xml_to_txt(self) -> None:
         """Convert labels from xml to txt"""
         self._modify_xmls()
         labels = os.listdir(self.labels_dir)
-        labels_check = [True if l.endswith('xml') else False for l in labels]
+        labels_check = [True if label.endswith('xml') else False for label in labels]
         if all(labels_check):
             for filename in labels:
                 filepath = os.path.join(self.labels_dir, filename)
@@ -92,15 +120,15 @@ class PrepareData:
                 raise ValueError('There are xml files in labels folder.')
 
         print(f'Number of label files with .txt format: {len(os.listdir(self.labels_dir))}')
-    
+
     @staticmethod
-    def _normalize_coordinates(image_path, bbox):
+    def _normalize_coordinates(image_path, bbox) -> List[float]:
         """
         Normalize bounding box coordinates.
 
         :param image_path: Path to the image file.
         :param bbox: Bounding box coordinates [x_min, y_min, x_max, y_max].
-        :return: Normalized bounding box coordinates [x_min_norm, y_min_norm, x_max_norm, y_max_norm].
+        :return: Normalized bounding box coordinates
         """
         image = cv2.imread(image_path)
         height, width = image.shape[:2]
@@ -151,7 +179,7 @@ class PrepareData:
                 # If any of items are greater than 1 it means that they are not normalized yet
                 if any(norm_check):
                     normalized_bbox = self._normalize_coordinates(image_path,
-                                                                [x_min, y_min, x_max, y_max])
+                                                                  [x_min, y_min, x_max, y_max])
                     normalized_lines.append(f"{class_id} {' '.join(map(str, normalized_bbox))}\n")
                 else:
                     normalized = False
@@ -166,6 +194,27 @@ class PrepareData:
 
 
 class TrainTestSplit:
+    """
+    Randomly splits data into train, validation and test. This stage is
+    totally optional.
+
+    ...
+    Attributes
+    ----------
+        image_train_path: path to train images. default is data/images/train.
+        image_validation_path: path to validation images. default is data/images/validation
+        image_test_path: path to test images. default is data/images/test
+        train: defines the train portion for spliting
+        val: defines the validation portion for spliting
+
+
+    Private Methods
+    ---------------
+        _create_dirs()
+
+    Public Methods
+        split()
+    """
     def __init__(self,
                  image_train_path: str = 'data/images/train',
                  image_validation_path: str = 'data/images/validation',
@@ -178,6 +227,10 @@ class TrainTestSplit:
         self.train, self.val = train, val
 
     def _create_dirs(self) -> None:
+        """
+        Creates train/val/test directories in the data root dir for both
+        images and labels
+        """
         os.makedirs(self.image_train_path, exist_ok=True)
         os.makedirs(self.image_validation_path, exist_ok=True)
         os.makedirs(self.image_test_path, exist_ok=True)
@@ -187,9 +240,12 @@ class TrainTestSplit:
                     exist_ok=True)
         os.makedirs(self.image_test_path.replace("images", "labels"),
                     exist_ok=True)
-    
-    def split(self, src_dir_path: str = 'data/images'):
-        """Separates train/ validation/ test"""
+
+    def split(self, src_dir_path: str = 'data/images') -> None:
+        """
+        Splits data into train/validation/test partitions and move them to
+        the final destinations.
+        """
         random.seed(4)
         shuffled_files = os.listdir(src_dir_path)
         random.shuffle(shuffled_files)
@@ -214,9 +270,15 @@ class TrainTestSplit:
                 shutil.move(image_path, dstpath)
                 shutil.move(label_path, dstpath.replace('images', 'labels').replace('png', 'txt'))
 
-        print(f'Number of train images: {len(os.listdir(self.image_train_path))}')
-        print(f'Number of train labels: {len(os.listdir(self.image_train_path.replace("images", "labels")))}')
-        print(f'Number of validation images: {len(os.listdir(self.image_validation_path))}')
-        print(f'Number of validation labels: {len(os.listdir(self.image_validation_path.replace("images", "labels")))}')
-        print(f'Number of test images: {len(os.listdir(self.image_test_path))}')
-        print(f'Number of test labels: {len(os.listdir(self.image_test_path.replace("images", "labels")))}')
+        print('Number of train images:' +
+              f'{len(os.listdir(self.image_train_path))}')
+        print('Number of train labels:' +
+              f'{len(os.listdir(self.image_train_path.replace("images","labels")))}')
+        print('Number of validation images:' +
+              f'{len(os.listdir(self.image_validation_path))}')
+        print('Number of validation labels:' +
+              f'{len(os.listdir(self.image_validation_path.replace("images", "labels")))}')
+        print('Number of test images:' +
+              f'{len(os.listdir(self.image_test_path))}')
+        print('Number of test labels:' +
+              f'{len(os.listdir(self.image_test_path.replace("images", "labels")))}')

@@ -1,10 +1,24 @@
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from typing import List
 from ultralytics import YOLO
 
 
 class Predict:
+    """
+    Gets predictions and visualization of a yolo saved model
+    ...
+    Attributes
+    ----------
+        image_path: path to jpg or png test image
+        model_path: path to saved YOLOv8 model
+        output_path: name of plt saved figure of final predictio
+
+    Public Methods
+        get_yolo_predictions()
+        visualize_predictions()
+    """
     def __init__(self,
                  image_path: str,
                  model_path: str,
@@ -17,7 +31,7 @@ class Predict:
         """
         Get YOLOv8 predictions for an image.
 
-        :return: List of predictions, each containing [class_id, x_min, y_min, x_max, y_max, confidence].
+        :return: List of predictions
         """
         # Load the model
         model = YOLO(self.model_path)
@@ -36,11 +50,11 @@ class Predict:
 
         return predictions
 
-    def visualize_predictions(self, predictions, class_names):
+    def visualize_predictions(self, predictions: list, class_names: List[str]):
         """
         Visualizes YOLO predictions on an image using OpenCV.
 
-        :param predictions: List of predictions [class_id, x_min, y_min, x_max, y_max, confidence].
+        :param predictions: List of predictions
         :param class_names: List of class names.
         """
         image = cv2.imread(self.image_path)

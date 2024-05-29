@@ -1,15 +1,16 @@
 import argparse
 import os
 
-from prediction import Predict
+from src.prediction import Predict
 
 
-parser = argparse.ArgumentParser(description='Gets model path and file path')
+parser = argparse.ArgumentParser(description='Gets model path, file path and' +
+                                             'a name for saving output.')
 
 # Defining the parser arguments
 parser.add_argument('-mp',
                     '--model_path',
-                    default='/kaggle/working/runs/detect/train/weights/best.pt',
+                    default='runs/detect/train/weights/best.pt',
                     help='path to saved YOLOv8 model')
 parser.add_argument('-fp',
                     '--image_path',
@@ -23,8 +24,8 @@ args = parser.parse_args()
 
 def main(image_path, model_path, output_name):
     output_path = os.path.join('runs', output_name)
-    # load a pretrained model (recommended for training)
     class_names = ['Car Plate']  # Replace with your actual class names
+
     predict = Predict(image_path, model_path, output_path)
     predictions = predict.get_yolo_predictions()
     # Visualize predictions
