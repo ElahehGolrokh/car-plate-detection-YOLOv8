@@ -80,3 +80,5 @@ To get predictions from a YOLO saved model, run:
 python inference.py --model_path 'path/to/model' --image_path 'path/to/test_image'
 ```
 The default path for the saved model is `runs/detect/train/weights/best.pt`. The test image can be in `jpg` or `png` format. The result of the model's predicted bounding boxes will be saved in the `runs` directory as a `png` file.
+
+Note: You might need to change datasets_dir, weights_dir, or runs_dir in .config/Ultralytics/settings.yaml based on the root of your project.
