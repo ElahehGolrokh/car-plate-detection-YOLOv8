@@ -4,7 +4,11 @@ Welcome to the car plate detection project using YOLOv8! This repository provide
 
 ## Overview
 
-The basic usage is based on the YOLOv8 tutorial, customized for the current dataset to guide you through preparing data and training a model. This tutorial will cover everything from installation to training the YOLOv8 object detection model with a custom dataset and then exporting it for inference.
+The basic usage is based on the YOLOv8 tutorial, customized for the current dataset to guide you through preparing data and training a model. This tutorial will cover everything from installation to training the YOLOv8 object detection model with a custom dataset and then exporting it for inference. <br>
+
+You can find the dataset used in this project <a href="https://www.kaggle.com/datasets/andrewmvd/car-plate-detection">here</a>. <br>
+
+Also <a href="https://www.kaggle.com/code/elahehgolrokh/training-object-detection-model-using-yolo8">here</a> is the kaggle notebook of this project.
 
 ## Installation
 
