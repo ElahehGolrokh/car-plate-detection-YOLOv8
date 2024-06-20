@@ -5,15 +5,15 @@ from typing import List
 from ultralytics import YOLO
 
 
-class Predict:
+class ImagePredictor:
     """
-    Gets predictions and visualization of a yolo saved model
+    Gets predictions and visualization of a yolo saved model on test image
     ...
     Attributes
     ----------
         image_path: path to jpg or png test image
         model_path: path to saved YOLOv8 model
-        output_path: name of plt saved figure of final predictio
+        output_path: name of plt saved figure of final prediction
 
     Public Methods
         get_yolo_predictions()
@@ -84,3 +84,84 @@ class Predict:
                      fontsize=12,
                      bbox=dict(facecolor='white', alpha=0.5))
         plt.savefig(self.output_path)
+
+
+class VideoPredictor:
+    """
+    Gets predictions and visualization of a yolo saved model on test video
+    ...
+    Attributes
+    ----------
+        video_path: path to jpg or png test video
+        model_path: path to saved YOLOv8 model
+        output_path: name of saved avi final of prediction
+
+    Public Methods
+        run()
+    """
+    def __init__(self,
+                 video_path: str,
+                 model_path: str,
+                 output_path: str) -> None:
+        self.video_path = video_path
+        self.model_path = model_path
+        self.output_path = output_path
+
+    def run(self) -> None:
+
+        model = YOLO(self.model_path)
+
+        # Open the video file
+        cap = cv2.VideoCapture(self.video_path)
+
+        # Get video properties
+        frame_width = int(cap.get(3))
+        frame_height = int(cap.get(4))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+
+        # Define the codec and create VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(self.output_path,
+                              fourcc,
+                              fps,
+                              (frame_width, frame_height))
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            # Perform inference on the frame
+            results = model(frame)
+
+            # Extract predictions and draw bounding boxes
+            for box in results[0].boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                label = model.names[int(box.cls)]
+                confidence = box.conf.item()
+                color = (0, 255, 0)  # Green color for bounding boxes
+
+                # Draw bounding box
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                # Draw label and confidence
+                cv2.putText(frame,
+                            f'{label} {confidence:.2f}',
+                            (x1, y1 - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.9,
+                            color,
+                            2)
+
+            # Write the frame with predictions
+            out.write(frame)
+
+            # Display the frame with predictions
+            cv2.imshow('YOLOv8 Predictions', frame)
+
+            # Press 'q' to exit the loop
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        out.release()
+        cv2.destroyAllWindows()

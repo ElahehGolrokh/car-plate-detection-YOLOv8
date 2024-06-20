@@ -18,4 +18,4 @@ test_size: .1
 
 # training
 image_size: 384
-epochs: 2
+epochs: 40
