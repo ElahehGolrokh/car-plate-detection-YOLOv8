@@ -1,7 +1,7 @@
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from typing import List
+from typing import List, Tuple
 from ultralytics import YOLO
 
 
@@ -50,12 +50,16 @@ class ImagePredictor:
 
         return predictions
 
-    def visualize_predictions(self, predictions: list, class_names: List[str]):
+    def visualize_predictions(self,
+                              predictions: list,
+                              class_names: List[str],
+                              ocr_result: Tuple):
         """
         Visualizes YOLO predictions on an image using OpenCV.
 
         :param predictions: List of predictions
-        :param class_names: List of class names.
+        :param class_names: List of class names
+        :param ocr_result: Result of plate reading via easyocr
         """
         image = cv2.imread(self.image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -65,11 +69,13 @@ class ImagePredictor:
         # Add bounding boxes
         for pred in predictions:
             x_min, y_min, x_max, y_max, confidence, class_id = pred
+            width = x_max - x_min
+            height = y_max - y_min
 
             # Create a rectangle patch
             rect = patches.Rectangle((x_min, y_min),
-                                     x_max - x_min,
-                                     y_max - y_min,
+                                     width,
+                                     height,
                                      linewidth=2,
                                      edgecolor='g',
                                      facecolor='none')
@@ -83,6 +89,18 @@ class ImagePredictor:
                      color='g',
                      fontsize=12,
                      bbox=dict(facecolor='white', alpha=0.5))
+            
+            # Add OCR Result
+            if ocr_result:
+                label = f"Plate Number: {ocr_result[0][1]}, Confidence: {ocr_result[0][2]:.2f}"
+            else:
+                label = 'Unable to read'
+            plt.text(x_min - width/2,
+                     y_max + height/2,
+                     label,
+                     color='black',
+                     fontsize=12,
+                     bbox=dict(facecolor='white', alpha=0.7))
         plt.savefig(self.output_path)
 
 
