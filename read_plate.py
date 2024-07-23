@@ -1,8 +1,5 @@
 import argparse
-import cv2
 import easyocr
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 
 from src.prediction import ImagePredictor, VideoPredictor
@@ -32,67 +29,44 @@ parser.add_argument('-on',
                     '--output_name',
                     default='output.png',
                     help='name of plt saved figure or viseo of the final prediction')
+parser.add_argument('-rf',
+                    '--read_flag',
+                    action='store_true',  # Default value is False
+                    help='specifies whether to read car plates using OCR')
 args = parser.parse_args()
 
 
-def get_plates_xy(image_path: np.ndarray, bbx: list, reader: easyocr.Reader) -> tuple:
-    '''Get the results from easyOCR for each frame'''
-    image = cv2.imread(image_path)
-    # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    x_min, y_min, x_max, y_max = (int(bbx[0]),
-                                  int(bbx[1]),
-                                  int(bbx[2]),
-                                  int(bbx[3]))
-
-    plate_crop = image[int(y_min):int(y_max), int(x_min):int(x_max)]
-    print('plate_crop shape = ', plate_crop.shape)
-    plt.imshow(plate_crop)
-    plt.show()
-    ocr_result = reader.readtext(plate_crop,
-                                 allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')  #, paragraph="True", min_size=50)
-    
-    return ocr_result, x_min, y_min
-
-
-def main(image_path, video_path, model_path, output_name, image_dir):
+def main(image_path, video_path, model_path, output_name, image_dir, read_flag):
+    if read_flag:
+        reader = easyocr.Reader(['en'])
+    else:
+        reader = None
     if image_path:
         output_path = os.path.join('runs', output_name)
         class_names = ['Car Plate']  # Replace with your actual class names
-        image_predictor = ImagePredictor(image_path, model_path, output_path)
+        image_predictor = ImagePredictor(image_path, model_path, output_path, reader)
         predictions = image_predictor.get_yolo_predictions()
-
-        reader = easyocr.Reader(['en'])
-
-        for prediction in predictions:
-            ocr_result, _, _ = get_plates_xy(image_path, prediction, reader)
-            print(f'OCR RESULT = {ocr_result}')
         
         # Visualize the predictions
-        image_predictor.visualize_predictions(predictions, class_names, ocr_result)
+        image_predictor.visualize_predictions(predictions, class_names)
     
     elif image_dir:
         for file in os.listdir(image_dir):
             image_path = os.path.join(image_dir, file)
             output_path = os.path.join('runs', file)
             class_names = ['Car Plate']  # Replace with your actual class names
-            image_predictor = ImagePredictor(image_path, model_path, output_path)
+            image_predictor = ImagePredictor(image_path, model_path, output_path, reader)
             predictions = image_predictor.get_yolo_predictions()
 
-            reader = easyocr.Reader(['en'])
-
-            for prediction in predictions:
-                ocr_result, _, _ = get_plates_xy(image_path, prediction, reader)
-                print(f'OCR RESULT = {ocr_result}')
-
             # Visualize the predictions
-            image_predictor.visualize_predictions(predictions, class_names, ocr_result)
+            image_predictor.visualize_predictions(predictions, class_names)
 
     elif video_path:
         output_path = os.path.join('runs', output_name)
-        video_predictor = VideoPredictor(video_path=video_path,
-                                         model_path=model_path,
-                                         output_path=output_path)
+        video_predictor = VideoPredictor(video_path,
+                                         model_path,
+                                         output_path,
+                                         reader)
         video_predictor.run()
 
 
@@ -101,4 +75,5 @@ if __name__ == '__main__':
          args.video_path,
          args.model_path,
          args.output_name,
-         args.image_dir)
+         args.image_dir,
+         args.read_flag)

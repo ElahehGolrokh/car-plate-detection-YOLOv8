@@ -1,6 +1,8 @@
 import cv2
+import easyocr
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import numpy as np
 import os
 import pdb
 from typing import List, Tuple
@@ -24,10 +26,12 @@ class ImagePredictor:
     def __init__(self,
                  image_path: str,
                  model_path: str,
-                 output_path: str) -> None:
+                 output_path: str,
+                 reader: easyocr.Reader = None) -> None:
         self.image_path = image_path
         self.model = YOLO(model_path)
         self.output_path = output_path
+        self.reader = reader
 
     def get_yolo_predictions(self) -> list:
         """
@@ -51,14 +55,12 @@ class ImagePredictor:
 
     def visualize_predictions(self,
                               predictions: list,
-                              class_names: List[str],
-                              ocr_result: Tuple):
+                              class_names: List[str]):
         """
         Visualizes YOLO predictions on an image using OpenCV.
 
         :param predictions: List of predictions
         :param class_names: List of class names
-        :param ocr_result: Result of plate reading via easyocr
         """
         image = cv2.imread(self.image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -66,8 +68,8 @@ class ImagePredictor:
         ax.imshow(image)
 
         # Add bounding boxes
-        for pred in predictions:
-            x_min, y_min, x_max, y_max, confidence, class_id = pred
+        for bbx in predictions:
+            x_min, y_min, x_max, y_max, confidence, class_id = bbx
             width = x_max - x_min
             height = y_max - y_min
 
@@ -90,17 +92,36 @@ class ImagePredictor:
                      bbox=dict(facecolor='white', alpha=0.5))
             
             # Add OCR Result
-            if ocr_result:
-                label = f"Plate Number: {ocr_result[0][1]}, Confidence: {ocr_result[0][2]:.2f}"
-            else:
-                label = 'Unable to read'
-            plt.text(x_min - width/2,
-                     y_max + height/2,
-                     label,
-                     color='black',
-                     fontsize=12,
-                     bbox=dict(facecolor='white', alpha=0.7))
+            if self.reader:
+                ocr_result = self._read_plate(image, bbx)
+                if ocr_result:
+                    label = f"Plate Number: {ocr_result[0][1]}, Confidence: {ocr_result[0][2]:.2f}"
+                else:
+                    label = 'Unable to read'
+                plt.text(x_min - width/2,
+                         y_max + height/2,
+                         label,
+                         color='black',
+                         fontsize=12,
+                         bbox=dict(facecolor='white', alpha=0.7))
         plt.savefig(self.output_path)
+    
+    @staticmethod
+    def _crop_plate(image: np.ndarray, bbx: list) -> np.ndarray:
+        """Crops car plate from original image"""
+        x_min, y_min, x_max, y_max = (int(bbx[0]),
+                                      int(bbx[1]),
+                                      int(bbx[2]),
+                                      int(bbx[3]))
+        plate_crop = image[y_min: y_max, x_min: x_max]
+        return plate_crop
+    
+    def _read_plate(self, image: np.ndarray, bbx: list) -> Tuple:
+        """Get the results from easyOCR for each frame"""
+        plate_crop = self._crop_plate(image, bbx)
+        ocr_result = self.reader.readtext(plate_crop,
+                                          allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')  #, paragraph="True", min_size=50)
+        return ocr_result
 
 
 class VideoPredictor:
@@ -119,11 +140,13 @@ class VideoPredictor:
     def __init__(self,
                  video_path: str,
                  model_path: str,
-                 output_path: str) -> None:
+                 output_path: str,
+                 reader: easyocr.Reader = None) -> None:
         self.video_path = video_path
         self.model = YOLO(model_path)
         self.output_path = output_path
         self.frame = None
+        self.reader = reader
 
     def run(self) -> None:
         """Reads video file"""
@@ -175,18 +198,50 @@ class VideoPredictor:
     
     def visualize_predictions(self,
                               box):
-        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
         label = self.model.names[int(box.cls)]
         confidence = box.conf.item()
         color = (0, 255, 0)  # Green color for bounding boxes
 
         # Draw bounding box
-        cv2.rectangle(self.frame, (x1, y1), (x2, y2), color, 2)
+        cv2.rectangle(self.frame, (x_min, y_min), (x_max, y_max), color, 2)
         # Draw label and confidence
         cv2.putText(self.frame,
                     f'{label} {confidence:.2f}',
-                    (x1, y1 - 10),
+                    (x_min, y_min - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.9,
                     color,
                     2)
+        
+        # Add OCR Result
+        if self.reader:
+            # width = x_max - x_min
+            height = y_max - y_min
+            bounding_box = [x_min, y_min, x_max, y_max]
+            ocr_result = self._read_plate(self.frame, *bounding_box)
+            if ocr_result:
+                # label = f"Plate Number: {ocr_result[0][1]}, Confidence: {ocr_result[0][2]:.2f}"
+                label = f"{ocr_result[0][1]}, {ocr_result[0][2]:.2f}"
+            else:
+                label = 'Unable to read'
+            cv2.putText(self.frame,
+                        label,
+                        (x_min, y_max + height),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.9,
+                        (0, 255, 0),
+                        2)
+    
+    @staticmethod
+    def _crop_plate(image: np.ndarray, *bbx: list) -> np.ndarray:
+        """Crops car plate from original image"""
+        plate_crop = image[bbx[0][1]: bbx[0][3], bbx[0][0]: bbx[0][2]]
+        return plate_crop
+    
+    def _read_plate(self, image: np.ndarray, *bbx: list) -> Tuple:
+        """Get the results from easyOCR for each frame"""
+        plate_crop = self._crop_plate(image, bbx)
+        ocr_result = self.reader.readtext(plate_crop,
+                                          allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')  #, paragraph="True", min_size=50)
+        return ocr_result
