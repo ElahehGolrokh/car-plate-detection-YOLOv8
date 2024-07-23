@@ -36,14 +36,14 @@ args = parser.parse_args()
 
 
 def get_plates_xy(image_path: np.ndarray, bbx: list, reader: easyocr.Reader) -> tuple:
-    '''Get the results from easyOCR for each frame and return them with bounding box coordinates'''
+    '''Get the results from easyOCR for each frame'''
     image = cv2.imread(image_path)
     # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     x_min, y_min, x_max, y_max = (int(bbx[0]),
                                   int(bbx[1]),
                                   int(bbx[2]),
-                                  int(bbx[3])) ## BBOx coordniates
+                                  int(bbx[3]))
 
     plate_crop = image[int(y_min):int(y_max), int(x_min):int(x_max)]
     print('plate_crop shape = ', plate_crop.shape)
@@ -87,6 +87,7 @@ def main(image_path, video_path, model_path, output_name, image_dir):
 
             # Visualize the predictions
             image_predictor.visualize_predictions(predictions, class_names, ocr_result)
+
     elif video_path:
         output_path = os.path.join('runs', output_name)
         video_predictor = VideoPredictor(video_path=video_path,

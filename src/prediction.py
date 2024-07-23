@@ -1,6 +1,8 @@
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import os
+import pdb
 from typing import List, Tuple
 from ultralytics import YOLO
 
@@ -24,20 +26,17 @@ class ImagePredictor:
                  model_path: str,
                  output_path: str) -> None:
         self.image_path = image_path
-        self.model_path = model_path
+        self.model = YOLO(model_path)
         self.output_path = output_path
 
     def get_yolo_predictions(self) -> list:
         """
-        Get YOLOv8 predictions for an image.
+        Returns YOLOv8 predictions for an image.
 
         :return: List of predictions
         """
-        # Load the model
-        model = YOLO(self.model_path)
-
         # Get predictions
-        results = model.predict(self.image_path)
+        results = self.model.predict(self.image_path)
 
         predictions = []
 
@@ -122,16 +121,16 @@ class VideoPredictor:
                  model_path: str,
                  output_path: str) -> None:
         self.video_path = video_path
-        self.model_path = model_path
+        self.model = YOLO(model_path)
         self.output_path = output_path
+        self.frame = None
 
     def run(self) -> None:
-
-        model = YOLO(self.model_path)
-
+        """Reads video file"""
+        if not os.path.exists(self.video_path):
+            raise FileNotFoundError('The video file does not exist in the specified path')
         # Open the video file
         cap = cv2.VideoCapture(self.video_path)
-
         # Get video properties
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
@@ -143,43 +142,51 @@ class VideoPredictor:
                               fourcc,
                               fps,
                               (frame_width, frame_height))
-
         while cap.isOpened():
-            ret, frame = cap.read()
+            ret, self.frame = cap.read()
             if not ret:
                 break
-
-            # Perform inference on the frame
-            results = model(frame)
-
-            # Extract predictions and draw bounding boxes
-            for box in results[0].boxes:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                label = model.names[int(box.cls)]
-                confidence = box.conf.item()
-                color = (0, 255, 0)  # Green color for bounding boxes
-
-                # Draw bounding box
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                # Draw label and confidence
-                cv2.putText(frame,
-                            f'{label} {confidence:.2f}',
-                            (x1, y1 - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.9,
-                            color,
-                            2)
-
-            # Write the frame with predictions
-            out.write(frame)
-
-            # Display the frame with predictions
-            cv2.imshow('YOLOv8 Predictions', frame)
-
+            self.get_yolo_predictions()
             # Press 'q' to exit the loop
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+            # Write the frame with predictions
+            # pdb.set_trace()
+            out.write(self.frame)
+
+            # Display the frame with predictions
+            cv2.imshow('YOLOv8 Predictions', self.frame)
 
         cap.release()
         out.release()
         cv2.destroyAllWindows()
+    
+    def get_yolo_predictions(self) -> list:
+        """
+        Returns YOLOv8 predictions for a frame of the input video
+
+        :return: List of predictions
+        """
+        # Perform inference on the frame
+        results = self.model(self.frame)
+        # Extract predictions and draw bounding boxes
+        for box in results[0].boxes:
+            self.visualize_predictions(box)
+    
+    def visualize_predictions(self,
+                              box):
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        label = self.model.names[int(box.cls)]
+        confidence = box.conf.item()
+        color = (0, 255, 0)  # Green color for bounding boxes
+
+        # Draw bounding box
+        cv2.rectangle(self.frame, (x1, y1), (x2, y2), color, 2)
+        # Draw label and confidence
+        cv2.putText(self.frame,
+                    f'{label} {confidence:.2f}',
+                    (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.9,
+                    color,
+                    2)
