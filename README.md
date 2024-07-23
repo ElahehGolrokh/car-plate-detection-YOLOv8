@@ -66,7 +66,7 @@ To train your own object detection model, you can run:
 python main.py
 ```
 
-You can customize the following arguments:
+You can customize the following arguments for running the main script:
 
 * -rpr or --remove_prev_runs: Whether you want to remove previous runs.
 * -p or --prepare: Whether you want to implement data preparation.
@@ -79,9 +79,18 @@ To get predictions from a YOLO saved model, run:
 ```shell
 python inference.py --model_path 'path/to/model' --image_path 'path/to/test_image' --output_name 'output.png'
 ```
-The default path for the saved model is `runs/detect/train/weights/best.pt`. The test image can be in `jpg` or `png` format. The result of the model's predicted bounding boxes will be saved in the `runs` directory as a `png` file.
+You can customize the following arguments for running the inference script:
 
-Note: You might need to change datasets_dir, weights_dir, or runs_dir in .config/Ultralytics/settings.yaml based on the root of your project.
+* -mp or --model_path: path to saved YOLOv8 model
+* -ip or --image_path: path to jpg or png test image
+* -imgd or --image_dir: path to test images directory
+* -vp or --video_path: path to mp4 test video
+* -on or --output_name: name of plt saved figure or video of the final prediction
+* -rf or --read_flag: pecifies whether to read car plates using OCR
+<br>
+The default path for the saved model is `runs/detect/train/weights/best.pt`. The test image can be in `jpg` or `png` format. The result of the model's predicted bounding boxes will be saved in the `runs` directory as a `png` file or your predefined format for video files (avi or mp4). <br>
+
+Note: You might need to change datasets_dir, weights_dir, or runs_dir in .config/Ultralytics/settings.yaml based on the root of your project. <br>
 
 Also for getting predictions from a YOLO saved model on test videos you can run:
 
