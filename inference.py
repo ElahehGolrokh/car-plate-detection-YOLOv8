@@ -42,24 +42,26 @@ def main(image_path, video_path, model_path, output_name, image_dir, read_flag):
     else:
         reader = None
     if image_path:
-        output_path = os.path.join('runs', output_name)
-        class_names = ['Car Plate']  # Replace with your actual class names
-        image_predictor = ImagePredictor(image_path, model_path, output_path, reader)
-        predictions = image_predictor.get_yolo_predictions()
+        image_predictor = ImagePredictor(image_path, model_path, output_name, reader)
+        image_predictor.run()
+    #     output_path = os.path.join('runs', output_name)
+    #     class_names = ['Car Plate']  # Replace with your actual class names
+    #     image_predictor = ImagePredictor(image_path, model_path, output_path, reader)
+    #     predictions = image_predictor.get_yolo_predictions()
         
-        # Visualize the predictions
-        image_predictor.visualize_predictions(predictions, class_names)
+    #     # Visualize the predictions
+    #     image_predictor.visualize_predictions(predictions, class_names)
     
-    elif image_dir:
-        for file in os.listdir(image_dir):
-            image_path = os.path.join(image_dir, file)
-            output_path = os.path.join('runs', file)
-            class_names = ['Car Plate']  # Replace with your actual class names
-            image_predictor = ImagePredictor(image_path, model_path, output_path, reader)
-            predictions = image_predictor.get_yolo_predictions()
+    # elif image_dir:
+    #     for file in os.listdir(image_dir):
+    #         image_path = os.path.join(image_dir, file)
+    #         output_path = os.path.join('runs', file)
+    #         class_names = ['Car Plate']  # Replace with your actual class names
+    #         image_predictor = ImagePredictor(image_path, model_path, output_path, reader)
+    #         predictions = image_predictor.get_yolo_predictions()
 
-            # Visualize the predictions
-            image_predictor.visualize_predictions(predictions, class_names)
+    #         # Visualize the predictions
+    #         image_predictor.visualize_predictions(predictions, class_names)
 
     elif video_path:
         output_path = os.path.join('runs', output_name)

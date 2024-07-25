@@ -86,7 +86,7 @@ You can customize the following arguments for running the inference script:
 * -imgd or --image_dir: path to test images directory
 * -vp or --video_path: path to mp4 test video
 * -on or --output_name: name of plt saved figure or video of the final prediction
-* -rf or --read_flag: pecifies whether to read car plates using OCR
+* -rf or --read_flag: specifies whether to read car plates using OCR
 <br>
 The default path for the saved model is `runs/detect/train/weights/best.pt`. The test image can be in `jpg` or `png` format. The result of the model's predicted bounding boxes will be saved in the `runs` directory as a `png` file or your predefined format for video files (avi or mp4). <br>
 

@@ -26,97 +26,127 @@ class ImagePredictor:
     def __init__(self,
                  image_path: str,
                  model_path: str,
-                 output_path: str,
+                 output_name: str,
                  reader: easyocr.Reader = None) -> None:
         self.image_path = image_path
         self.model = YOLO(model_path)
-        self.output_path = output_path
+        self.output_name = output_name
         self.reader = reader
+    
+    def run(self) -> None:
+        """Reads images and Write the prediction results on each one"""
+        if not os.path.exists(self.image_path):
+            raise FileNotFoundError('No such file or directory')
+        
+        if os.path.isdir(self.image_path):
+            for file in os.listdir(self.image_path):
+                file_path = os.path.join(self.image_path, file)
+                self.get_yolo_predictions(file_path, file)
+        else:
+            self.get_yolo_predictions(self.image_path, self.output_name)
 
-    def get_yolo_predictions(self) -> list:
+    def get_yolo_predictions(self, file_path: str, file: str) -> list:
         """
         Returns YOLOv8 predictions for an image.
 
         :return: List of predictions
         """
         # Get predictions
-        results = self.model.predict(self.image_path)
+        results = self.model.predict(file_path)
+        # for result in results:
+        # for box in result.boxes:
+        # Visualize the predictions
+        self.visualize_predictions(results, file_path, file)
 
-        predictions = []
+        # predictions = []
 
-        for result in results:
-            for box in result.boxes:
-                x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
-                confidence = box.conf[0].item()
-                class_id = int(box.cls[0].item())
-                predictions.append([x_min, y_min, x_max, y_max, confidence, class_id])
+        # for result in results:
+        #     for box in result.boxes:
+        #         x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
+        #         confidence = box.conf[0].item()
+        #         class_id = int(box.cls[0].item())
+        #         predictions.append([x_min, y_min, x_max, y_max, confidence, class_id])
 
-        return predictions
+        # # Visualize the predictions
+        # self.visualize_predictions(predictions, file_path, file)
+        # if not is_prediction:
+        #     print(f'No car plates has been detected for {file}.')
+        # return predictions
 
     def visualize_predictions(self,
-                              predictions: list,
-                              class_names: List[str]):
+                              results: list,
+                              file_path: str,
+                              file: str):  # class_names: List[str]
         """
         Visualizes YOLO predictions on an image using OpenCV.
 
         :param predictions: List of predictions
         :param class_names: List of class names
         """
-        image = cv2.imread(self.image_path)
+        # is_prediction = False
+        output_path = os.path.join('runs', file)
+        image = cv2.imread(file_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         _, ax = plt.subplots(1)
         ax.imshow(image)
 
         # Add bounding boxes
-        for bbx in predictions:
-            x_min, y_min, x_max, y_max, confidence, class_id = bbx
-            width = x_max - x_min
-            height = y_max - y_min
+        for result in results:
+            for bbx in result.boxes:
+                # x_min, y_min, x_max, y_max, confidence, class_id = bbx
 
-            # Create a rectangle patch
-            rect = patches.Rectangle((x_min, y_min),
-                                     width,
-                                     height,
-                                     linewidth=2,
-                                     edgecolor='g',
-                                     facecolor='none')
-            ax.add_patch(rect)
+                x_min, y_min, x_max, y_max = map(int, bbx.xyxy[0])
+                bounding_box = [x_min, y_min, x_max, y_max]
+                label = self.model.names[int(bbx.cls)]
+                confidence = bbx.conf.item()
 
-            # Add label
-            label = f"{class_names[class_id]}: {confidence:.2f}"
-            plt.text(x_min,
-                     y_min - 10,
-                     label,
-                     color='g',
-                     fontsize=12,
-                     bbox=dict(facecolor='white', alpha=0.5))
-            
-            # Add OCR Result
-            if self.reader:
-                ocr_result = self._read_plate(image, bbx)
-                if ocr_result:
-                    label = f"Plate Number: {ocr_result[0][1]}, Confidence: {ocr_result[0][2]:.2f}"
-                else:
-                    label = 'Unable to read'
-                plt.text(x_min - width/2,
-                         y_max + height/2,
-                         label,
-                         color='black',
-                         fontsize=12,
-                         bbox=dict(facecolor='white', alpha=0.7))
-        plt.savefig(self.output_path)
+                width = x_max - x_min
+                height = y_max - y_min
+
+                # Create a rectangle patch
+                rect = patches.Rectangle((x_min, y_min),
+                                        width,
+                                        height,
+                                        linewidth=2,
+                                        edgecolor='g',
+                                        facecolor='none')
+                ax.add_patch(rect)
+
+                # Add label
+                # label = f"{class_names[class_id]}: {confidence:.2f}"
+                plt.text(x_min,
+                        y_min - 10,
+                        f'{label} {confidence:.2f}',
+                        color='g',
+                        fontsize=12,
+                        bbox=dict(facecolor='white', alpha=0.5))
+                
+                # Add OCR Result
+                if self.reader:
+                    ocr_result = self._read_plate(image, *bounding_box)
+                    if ocr_result:
+                        label = f"Plate Number: {ocr_result[0][1]}, Confidence: {ocr_result[0][2]:.2f}"
+                    else:
+                        label = 'Unable to read'
+                    plt.text(x_min - width/2,
+                            y_max + height/2,
+                            label,
+                            color='black',
+                            fontsize=12,
+                            bbox=dict(facecolor='white', alpha=0.7))
+        plt.savefig(output_path)
     
     @staticmethod
-    def _crop_plate(image: np.ndarray, bbx: list) -> np.ndarray:
+    def _crop_plate(image: np.ndarray, *bbx: list) -> np.ndarray:
         """Crops car plate from original image"""
-        x_min, y_min, x_max, y_max = (int(bbx[0]),
-                                      int(bbx[1]),
-                                      int(bbx[2]),
-                                      int(bbx[3]))
+        x_min, y_min, x_max, y_max = (bbx[0][0],
+                                      bbx[0][1],
+                                      bbx[0][2],
+                                      bbx[0][3])
         plate_crop = image[y_min: y_max, x_min: x_max]
         return plate_crop
     
-    def _read_plate(self, image: np.ndarray, bbx: list) -> Tuple:
+    def _read_plate(self, image: np.ndarray, *bbx: list) -> Tuple:
         """Get the results from easyOCR for each frame"""
         plate_crop = self._crop_plate(image, bbx)
         ocr_result = self.reader.readtext(plate_crop,
@@ -149,9 +179,9 @@ class VideoPredictor:
         self.reader = reader
 
     def run(self) -> None:
-        """Reads video file"""
+        """Reads video file and Write the prediction results on each frame"""
         if not os.path.exists(self.video_path):
-            raise FileNotFoundError('The video file does not exist in the specified path')
+            raise FileNotFoundError('No such file or directory')
         # Open the video file
         cap = cv2.VideoCapture(self.video_path)
         # Get video properties
@@ -193,11 +223,15 @@ class VideoPredictor:
         # Perform inference on the frame
         results = self.model(self.frame)
         # Extract predictions and draw bounding boxes
-        for box in results[0].boxes:
-            self.visualize_predictions(box)
+        # for box in results[0].boxes:
+        #     self.visualize_predictions(box)
+        for result in results:
+            for box in result.boxes:
+                self.visualize_predictions(box)
     
     def visualize_predictions(self,
                               box):
+        # Add bounding boxes
         x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
         label = self.model.names[int(box.cls)]
         confidence = box.conf.item()
