@@ -1,6 +1,5 @@
 import argparse
 import easyocr
-import os
 
 from src.prediction import ImagePredictor, VideoPredictor
 
@@ -24,7 +23,7 @@ parser.add_argument('-vp',
 parser.add_argument('-on',
                     '--output_name',
                     default=None,
-                    help='name of plt saved figure or viseo of the final prediction')
+                    help='name of the output saved figure or video')
 parser.add_argument('-rf',
                     '--read_flag',
                     action='store_true',  # Default value is False

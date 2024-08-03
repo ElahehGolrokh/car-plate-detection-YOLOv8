@@ -2,20 +2,19 @@ import cv2
 import easyocr
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import numpy as np
 import os
-import pdb
-from typing import List, Tuple
 from ultralytics import YOLO
 
+from .base import PrecictorBase
 
-class ImagePredictor:
+
+class ImagePredictor(PrecictorBase):
     """
-    Gets predictions and visualization of a yolo saved model on test image
+    Gets predictions and visualization of a yolo saved model on test images
     ...
     Attributes
     ----------
-        image_path: path to jpg or png test image
+        input: path to input test image or directory
         model_path: path to saved YOLOv8 model
         output_name: name of plt saved figure of final prediction
         reader: easyocr.Reader which would be passed if the user wants to
@@ -23,40 +22,43 @@ class ImagePredictor:
 
     Private Methods
     ---------------
+        _check_input()
         _get_yolo_predictions()
         _visualize_predictions()
-    
+        _crop_plate()
+        _read_plate()
+
     Public Methods
     --------------
         run()
     """
     def __init__(self,
-                 image_path: str,
+                 input: str,
                  model_path: str,
                  output_name: str,
                  reader: easyocr.Reader = None) -> None:
-        self.image_path = image_path
+        self.input = input
         self.model = YOLO(model_path)
         self.output_name = output_name
         self.reader = reader
-    
+
     def run(self) -> None:
-        """Reads images and Write the prediction results on each one"""
-        if not os.path.exists(self.image_path):
-            raise FileNotFoundError('No such file or directory')
-        
-        if os.path.isdir(self.image_path):
-            for file in os.listdir(self.image_path):
-                file_path = os.path.join(self.image_path, file)
+        """
+        Reads images and Write the prediction results on each one
+        """
+        if os.path.isdir(self.input):
+            for file in os.listdir(self.input):
+                file_path = os.path.join(self.input, file)
                 self._get_yolo_predictions(file_path, file)
         else:
-            self._get_yolo_predictions(self.image_path, self.output_name)
+            self._get_yolo_predictions(self.input, self.output_name)
 
-    def _get_yolo_predictions(self, file_path: str, file: str) -> list:
+    def _get_yolo_predictions(self, file_path: str, file: str) -> None:
         """
-        Returns YOLOv8 predictions for an image.
+        Gets YOLOv8 predictions for an image.
 
-        :return: List of predictions
+        :param file_path: path to test image or directory of images
+        :param file: input file name. it will be used to save the output
         """
         # Get predictions
         results = self.model.predict(file_path)
@@ -64,14 +66,15 @@ class ImagePredictor:
         self._visualize_predictions(results, file_path, file)
 
     def _visualize_predictions(self,
-                              results: list,
-                              file_path: str,
-                              file: str):
+                               results: list,
+                               file_path: str,
+                               file: str):
         """
-        Visualizes YOLO predictions on an image using OpenCV.
+        Visualizes YOLO predictions on an image.
 
-        :param predictions: List of predictions
-        :param class_names: List of class names
+        :param results: List of predictions
+        :param file_path: path to test image or directory of images
+        :param file: input file name. it will be used to save the output
         """
         output_path = os.path.join('runs', file)
         image = cv2.imread(file_path)
@@ -106,7 +109,7 @@ class ImagePredictor:
                          color='g',
                          fontsize=12,
                          bbox=dict(facecolor='white', alpha=0.5))
-                
+
                 # Add OCR Result
                 if self.reader:
                     ocr_result = self._read_plate(image, *bounding_box)
@@ -121,55 +124,50 @@ class ImagePredictor:
                              fontsize=12,
                              bbox=dict(facecolor='white', alpha=0.7))
         plt.savefig(output_path)
-    
-    @staticmethod
-    def _crop_plate(image: np.ndarray, *bbx: list) -> np.ndarray:
-        """Crops car plate from original image"""
-        x_min, y_min, x_max, y_max = (bbx[0][0],
-                                      bbx[0][1],
-                                      bbx[0][2],
-                                      bbx[0][3])
-        plate_crop = image[y_min: y_max, x_min: x_max]
-        return plate_crop
-    
-    def _read_plate(self, image: np.ndarray, *bbx: list) -> Tuple:
-        """Get the results from easyOCR for each image"""
-        plate_crop = self._crop_plate(image, bbx)
-        ocr_result = self.reader.readtext(plate_crop,
-                                          allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')  #, paragraph="True", min_size=50)
-        return ocr_result
 
 
-class VideoPredictor:
+class VideoPredictor(PrecictorBase):
     """
     Gets predictions and visualization of a yolo saved model on test video
     ...
     Attributes
     ----------
-        video_path: path to jpg or png test video
+        input: path to input test video
         model_path: path to saved YOLOv8 model
-        output_name: name of saved avi of finalprediction
+        output_name: name of saved output in avi format of final prediction
+        frame: current video frame which is under prediction
+        reader: easyocr.Reader which would be passed if the user wants to
+                read the plate number
+
+    Private Methods
+    ---------------
+        _check_input()
+        _get_yolo_predictions()
+        _visualize_predictions()
+        _crop_plate()
+        _read_plate()
 
     Public Methods
+    --------------
         run()
     """
     def __init__(self,
-                 video_path: str,
+                 input: str,
                  model_path: str,
                  output_name: str,
                  reader: easyocr.Reader = None) -> None:
-        self.video_path = video_path
+        self.input = input
         self.model = YOLO(model_path)
         self.output_name = output_name
         self.frame = None
         self.reader = reader
 
     def run(self) -> None:
-        """Reads video file and Write the prediction results on each frame"""
-        if not os.path.exists(self.video_path):
-            raise FileNotFoundError('No such file or directory')
+        """
+        Reads video file and Write the prediction results on each frame
+        """
         # Open the video file
-        cap = cv2.VideoCapture(self.video_path)
+        cap = cv2.VideoCapture(self.input)
         # Get video properties
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
@@ -199,12 +197,10 @@ class VideoPredictor:
         cap.release()
         out.release()
         cv2.destroyAllWindows()
-    
-    def _get_yolo_predictions(self) -> list:
-        """
-        Returns YOLOv8 predictions for a frame of the input video
 
-        :return: List of predictions
+    def _get_yolo_predictions(self):
+        """
+        Gets YOLOv8 predictions for a frame of the input video
         """
         # Perform inference on the frame
         results = self.model(self.frame)
@@ -212,9 +208,14 @@ class VideoPredictor:
         for result in results:
             for box in result.boxes:
                 self._visualize_predictions(box)
-    
+
     def _visualize_predictions(self,
-                              box):
+                               box):
+        """
+        Visualizes YOLO predictions on a frame of the input video
+
+        :param box: the specific predicted bounding box in the image
+        """
         # Add bounding boxes
         x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
         label = self.model.names[int(box.cls)]
@@ -231,7 +232,7 @@ class VideoPredictor:
                     0.9,
                     color,
                     2)
-        
+
         # Add OCR Result
         if self.reader:
             height = y_max - y_min
@@ -248,16 +249,3 @@ class VideoPredictor:
                         0.9,
                         (0, 255, 0),
                         2)
-    
-    @staticmethod
-    def _crop_plate(image: np.ndarray, *bbx: list) -> np.ndarray:
-        """Crops car plate from original image"""
-        plate_crop = image[bbx[0][1]: bbx[0][3], bbx[0][0]: bbx[0][2]]
-        return plate_crop
-    
-    def _read_plate(self, image: np.ndarray, *bbx: list) -> Tuple:
-        """Get the results from easyOCR for each frame"""
-        plate_crop = self._crop_plate(image, bbx)
-        ocr_result = self.reader.readtext(plate_crop,
-                                          allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')  #, paragraph="True", min_size=50)
-        return ocr_result
