@@ -82,10 +82,9 @@ python inference.py --model_path 'path/to/model' --image_path 'path/to/test_imag
 You can customize the following arguments for running the inference script:
 
 * -mp or --model_path: path to saved YOLOv8 model
-* -ip or --image_path: path to jpg or png test image
-* -imgd or --image_dir: path to test images directory
+* -ip or --image_path: path to jpg or png test image, or it could be path to directory containing several test images
 * -vp or --video_path: path to mp4 test video
-* -on or --output_name: name of plt saved figure or video of the final prediction
+* -on or --output_name: name of plt saved figure or video of the final prediction. Just will be used in case of inferencing for a single test image or video
 * -rf or --read_flag: specifies whether to read car plates using OCR
 <br>
 The default path for the saved model is `runs/detect/train/weights/best.pt`. The test image can be in `jpg` or `png` format. The result of the model's predicted bounding boxes will be saved in the `runs` directory as a `png` file or your predefined format for video files (avi or mp4). <br>
