@@ -114,7 +114,8 @@ class ImagePredictor(PrecictorBase):
                 if self.reader:
                     ocr_result = self._read_plate(image, *bounding_box)
                     if ocr_result:
-                        label = f"Plate Number: {ocr_result[0][1]}, Confidence: {ocr_result[0][2]:.2f}"
+                        # label = f"Plate Number: {ocr_result[0][1]}, Confidence: {ocr_result[0][2]:.2f}"
+                        label = f"Plate Number: {ocr_result[0][1]}"
                     else:
                         label = 'Unable to read'
                     plt.text(x_min - width/2,
@@ -239,7 +240,8 @@ class VideoPredictor(PrecictorBase):
             bounding_box = [x_min, y_min, x_max, y_max]
             ocr_result = self._read_plate(self.frame, *bounding_box)
             if ocr_result:
-                label = f"{ocr_result[0][1]}, {ocr_result[0][2]:.2f}"
+                # label = f"{ocr_result[0][1]}, {ocr_result[0][2]:.2f}"  # reporting with confidence (ocr_result[0][2])
+                label = f"{ocr_result[0][1]}"
             else:
                 label = 'Unable to read'
             cv2.putText(self.frame,

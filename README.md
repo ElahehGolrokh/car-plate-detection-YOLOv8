@@ -2,6 +2,7 @@
 ![predictions](predictions.jpg)
 Welcome to the car plate detection project using YOLOv8! This repository provides a step-by-step guide to preparing data, training an object detection model with YOLOv8, and running inference with the trained model.
 ![video_predictions](output02.avi)
+
 ## Overview
 
 The basic usage is based on the YOLOv8 tutorial, customized for the current dataset to guide you through preparing data and training a model. This tutorial will cover everything from installation to training the YOLOv8 object detection model with a custom dataset and then exporting it for inference. <br>
@@ -95,4 +96,14 @@ Also for getting predictions from a YOLO saved model on test videos you can run:
 
 ```shell
 python inference.py --model_path 'path/to/model' --video_path 'path/to/test_video' --output_name 'output.avi'
+```
+
+## Plate Reading
+
+![plate_reading](plate_reading.jpg)
+
+To read the car plates, pass the `-rf` flag (or `--read_flag`) to the command:
+
+```shell
+python inference.py --model_path 'path/to/model' --image_path 'path/to/test_image' -rf
 ```
